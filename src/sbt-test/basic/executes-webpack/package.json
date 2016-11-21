@@ -1,0 +1,6 @@
+{
+  "name": "executes-webpack",
+  "devDependencies": {
+    "webpack": "^1.13.3"
+  }
+}

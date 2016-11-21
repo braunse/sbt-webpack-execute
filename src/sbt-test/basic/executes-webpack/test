@@ -1,0 +1,3 @@
+> package
+
+$ exists target/scala-2.10/classes/my/pack/bundle.js
