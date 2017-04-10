@@ -17,7 +17,7 @@ In `project/webpack.sbt`:
 And in `build.sbt`:
 
     lazy val project = project.in(root_dir)
-      .enablePlugin(WebpackExecutePlugin)
+      .enablePlugins(WebpackExecutePlugin)
 
 ## Caveats
 
