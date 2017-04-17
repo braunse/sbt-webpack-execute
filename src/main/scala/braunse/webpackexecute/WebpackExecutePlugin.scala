@@ -118,7 +118,11 @@ object WebpackExecutePlugin extends AutoPlugin {
         IO.delete(outputDirectory)
         outputDirectory.mkdirs()
 
-        val command = List("node", exe.getCanonicalPath(), "--output-path", (outputDirectory / outputPath).getCanonicalPath())
+        val command = List(
+          "node", exe.absolutePath,
+          "--output-path", (outputDirectory / outputPath).absolutePath,
+          "--config", webpackConfig.absolutePath
+        )
 
         logs.info("Executing webpack")
         logs.debug(s"Calling webpack: `${command.mkString("", " ", "")}'")
