@@ -54,7 +54,7 @@ object WebpackExecutePlugin extends AutoPlugin {
     Webpack.environment := "development",
     Webpack.environmentVariable := "WEBPACK_ENV",
     Webpack.configurationFile := baseDirectory.value / "webpack.config.js",
-    Webpack.webpackExecutable := baseDirectory.value / "node_modules/.bin/webpack",
+    Webpack.webpackExecutable := baseDirectory.value / "node_modules/webpack/bin/webpack.js",
     Webpack.npmPackageJSON := baseDirectory.value / "package.json",
     Webpack.resourceDir := resourceManaged.value / "webpack",
     Webpack.inputDirs := Nil,
