@@ -54,7 +54,7 @@ object WebpackExecutePlugin extends AutoPlugin {
     Webpack.environment := "development",
     Webpack.environmentVariable := "WEBPACK_ENV",
     Webpack.configurationFile := baseDirectory.value / "webpack.config.js",
-    Webpack.webpackExecutable := baseDirectory.value / "node_modules/.bin/webpack",
+    Webpack.webpackExecutable := baseDirectory.value / "node_modules/webpack/bin/webpack.js",
     Webpack.npmPackageJSON := baseDirectory.value / "package.json",
     Webpack.resourceDir := resourceManaged.value / "webpack",
     Webpack.inputDirs := Nil,
@@ -84,7 +84,7 @@ object WebpackExecutePlugin extends AutoPlugin {
     if(packageJson.exists()) {
       val command = List((Webpack.npmExecutable in key).value, "install")
       logs.info("npm install")
-      val retval = Process(command, Some((baseDirectory in key).value)).!
+      val retval = mkProcess(command, Some((baseDirectory in key).value)).!
       if(retval != 0) {
         sys.error(s"npm install returned $retval")
       }
@@ -127,7 +127,7 @@ object WebpackExecutePlugin extends AutoPlugin {
         logs.info("Executing webpack")
         logs.debug(s"Calling webpack: `${command.mkString("", " ", "")}'")
 
-        val exitVal = Process(command, Some(cwd), envVar -> envVal).!
+        val exitVal = mkProcess(command, Some(cwd), envVar -> envVal).!
         if (exitVal != 0) {
           sys.error(s"webpack returned exit code ${exitVal}")
         }
@@ -139,5 +139,13 @@ object WebpackExecutePlugin extends AutoPlugin {
       logs.debug(s"Generated files: ${generatedFiles.mkString("\n * ", "\n * ", "")}")
       generatedFiles
     }
+  }
+
+  private def mkProcess(command: Seq[String], cwd: Option[File], extraEnv: (String, String)*): ProcessBuilder = {
+    val isWindows = sys.props("os.name").contains("Windows")
+    val wrappedCommand =
+      if (isWindows) Seq("cmd", "/c") ++ command
+      else command
+    Process(wrappedCommand, cwd, extraEnv: _*)
   }
 }
