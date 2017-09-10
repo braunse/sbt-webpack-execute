@@ -22,6 +22,7 @@ package braunse.webpackexecute
 
 import sbt._
 import Keys._
+import sys.{process => P}
 
 object WebpackExecutePlugin extends AutoPlugin {
   object autoImport {
@@ -66,7 +67,7 @@ object WebpackExecutePlugin extends AutoPlugin {
 
     Webpack.ensureNPMInstalled := { npmInstallTask(Webpack.ensureNPMInstalled).value },
     Webpack.generate := { resourceGeneratorTask(Webpack.generate).dependsOn(Webpack.ensureNPMInstalled).value },
-    resourceGenerators <+= { Webpack.generate },
+    resourceGenerators += Webpack.generate.taskValue,
 
     managedResourceDirectories += Webpack.resourceDir.value
   )
@@ -81,10 +82,12 @@ object WebpackExecutePlugin extends AutoPlugin {
   private[this] def npmInstallTask(key: TaskKey[NPMUpToDate]) = Def.task {
     val logs = (streams in key).value.log
     val packageJson = (Webpack.npmPackageJSON in key).value
+    val npmExe = (Webpack.npmExecutable in key).value
+    val baseDir = (baseDirectory in key).value
     if(packageJson.exists()) {
-      val command = List((Webpack.npmExecutable in key).value, "install")
+      val command = List(npmExe, "install")
       logs.info("npm install")
-      val retval = mkProcess(command, Some((baseDirectory in key).value)).!
+      val retval = mkProcess(command, Some(baseDir)).!
       if(retval != 0) {
         sys.error(s"npm install returned $retval")
       }
@@ -99,22 +102,22 @@ object WebpackExecutePlugin extends AutoPlugin {
     val packageJson = (Webpack.npmPackageJSON in key).value
     val webpackConfig = (Webpack.configurationFile in key).value
     val logs = (streams in key).value.log
+    val potentialInputs = (Webpack.inputDirs in key).value.filter(_.isDirectory()).flatMap(dir => (dir ** ExistsFileFilter).get).toSet +
+      (Webpack.configurationFile in key).value
+    val outputDirectory = (Webpack.resourceDir in key).value
+    val outputPath = (Webpack.outputPath in key).value
+    val envVar = (Webpack.environmentVariable in key).value
+    val envVal = (Webpack.environment in key).value
+    val exe = (Webpack.webpackExecutable in key).value
+    val cwd = (baseDirectory in key).value
+    val webpackCacheDir = (streams in key).value.cacheDirectory / "webpack"
 
     if(!packageJson.exists() || !webpackConfig.exists()) {
       logs.info("Skipping webpack call")
       Seq()
     }
     else {
-      val potentialInputs = (Webpack.inputDirs in key).value.filter(_.isDirectory()).flatMap(dir => (dir ** ExistsFileFilter).get).toSet +
-        (Webpack.configurationFile in key).value
-      val outputDirectory = (Webpack.resourceDir in key).value
-      val outputPath = (Webpack.outputPath in key).value
-      val envVar = (Webpack.environmentVariable in key).value
-      val envVal = (Webpack.environment in key).value
-      val exe = (Webpack.webpackExecutable in key).value
-      val cwd = (baseDirectory in key).value
-
-      val cachedCompilation = FileFunction.cached((streams in key).value.cacheDirectory / "webpack", FilesInfo.lastModified, FilesInfo.exists) { (in: Set[File]) =>
+      val cachedCompilation = FileFunction.cached(webpackCacheDir, FilesInfo.lastModified, FilesInfo.exists) { (in: Set[File]) =>
         IO.delete(outputDirectory)
         outputDirectory.mkdirs()
 
@@ -141,11 +144,11 @@ object WebpackExecutePlugin extends AutoPlugin {
     }
   }
 
-  private def mkProcess(command: Seq[String], cwd: Option[File], extraEnv: (String, String)*): ProcessBuilder = {
+  private def mkProcess(command: Seq[String], cwd: Option[File], extraEnv: (String, String)*): P.ProcessBuilder = {
     val isWindows = sys.props("os.name").contains("Windows")
     val wrappedCommand =
       if (isWindows) Seq("cmd", "/c") ++ command
       else command
-    Process(wrappedCommand, cwd, extraEnv: _*)
+    P.Process(wrappedCommand, cwd, extraEnv: _*)
   }
 }

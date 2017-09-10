@@ -4,8 +4,6 @@ name := "sbt-webpack-execute"
 
 organization := "de.sebbraun.sbt"
 
-scalaVersion := "2.10.6"
-
 licenses := Seq(
   "MIT" -> url("http://opensource.org/licenses/MIT")
 )
@@ -37,6 +35,7 @@ publishTo := {
 publishMavenStyle := true
 
 sbtPlugin := true
+crossSbtVersions := Seq("0.13.6", "1.0.0")
 
 ScriptedPlugin.scriptedSettings
 
