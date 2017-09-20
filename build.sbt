@@ -35,7 +35,7 @@ publishTo := {
 publishMavenStyle := true
 
 sbtPlugin := true
-crossSbtVersions := Seq("0.13.6", "1.0.0")
+crossSbtVersions := Seq("0.13.16", "1.0.0")
 
 ScriptedPlugin.scriptedSettings
 
