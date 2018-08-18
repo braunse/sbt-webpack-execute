@@ -4,8 +4,6 @@ name := "sbt-webpack-execute"
 
 organization := "de.sebbraun.sbt"
 
-scalaVersion := "2.10.6"
-
 licenses := Seq(
   "MIT" -> url("http://opensource.org/licenses/MIT")
 )
@@ -37,6 +35,7 @@ publishTo := {
 publishMavenStyle := true
 
 sbtPlugin := true
+crossSbtVersions := Seq("0.13.16", "1.0.0")
 
 ScriptedPlugin.scriptedSettings
 
@@ -47,18 +46,31 @@ scriptedLaunchOpts := {
 
 scriptedBufferLog := false
 
-releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,              // : ReleaseStep
-  inquireVersions,                        // : ReleaseStep
-  runTest,                                // : ReleaseStep
-  releaseStepInputTask(scripted),         // run SBT plugin tests
-  setReleaseVersion,                      // : ReleaseStep
-  commitReleaseVersion,                   // : ReleaseStep, performs the initial git checks
-  tagRelease,                             // : ReleaseStep
-  publishArtifacts,                       // : ReleaseStep, checks whether `publishTo` is properly set up
-  setNextVersion,                         // : ReleaseStep
-  commitNextVersion,                      // : ReleaseStep
-  pushChanges                             // : ReleaseStep, also checks that an upstream branch is properly configured
-)
+releaseProcess := {
+  val versions = crossSbtVersions.value
+  // Run steps once for each SBT version.
+  // Required since releaseStepCommandAndRemaining("^ scripted") discards errors
+  // for some reason.
+  def cross(ss: ReleaseStep*) =
+    versions.flatMap { v =>
+      (releaseStepCommand("^^ " + v): ReleaseStep) +: ss
+    }
 
-releasePublishArtifactsAction := PgpKeys.publishSigned.value
+  Seq[ReleaseStep](
+    checkSnapshotDependencies,
+    inquireVersions
+  ) ++ cross(
+    releaseStepCommand("test"),
+    releaseStepCommand("scripted")
+  ) ++ Seq[ReleaseStep](
+    setReleaseVersion,                      // : ReleaseStep
+    commitReleaseVersion,                   // : ReleaseStep, performs the initial git checks
+    tagRelease                              // : ReleaseStep
+  ) ++ cross(
+    releaseStepCommand("publishSigned")
+  ) ++ Seq[ReleaseStep](
+    setNextVersion,                         // : ReleaseStep
+    commitNextVersion,                      // : ReleaseStep
+    pushChanges                             // : ReleaseStep, also checks that an upstream branch is properly configured
+  )
+}
