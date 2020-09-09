@@ -1,3 +1,7 @@
+# HAS NOT BEEN MAINTAINED IN A LONG TIME!
+
+This repo is going to be archived soon.
+
 # sbt-webpack-execute
 
 This is a simple SBT plugin to execute webpack and add the
